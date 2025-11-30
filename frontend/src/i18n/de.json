@@ -1,0 +1,11 @@
+{
+  "appTitle": "Ostereier-Suche",
+  "login": "Einloggen",
+  "logout": "Ausloggen",
+  "email": "E-Mail",
+  "password": "Passwort",
+  "register": "Registrieren",
+  "invitePlaceholder": "Token aus Einladungslink",
+  "found": "Gefunden",
+  "findCache": "Cache finden"
+}

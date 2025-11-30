@@ -1,0 +1,11 @@
+{
+  "appTitle": "Egg Hunt",
+  "login": "Log in",
+  "logout": "Log out",
+  "email": "Email",
+  "password": "Password",
+  "register": "Register",
+  "invitePlaceholder": "Token from invite link",
+  "found": "Found",
+  "findCache": "Find cache"
+}

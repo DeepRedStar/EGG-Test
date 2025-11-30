@@ -1,0 +1,71 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  role         Role
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  inviteTokens InviteToken[] @relation("InviteCreator")
+  caches       Cache[]
+  foundCaches  FoundCache[]
+}
+
+model InviteToken {
+  id             String   @id @default(cuid())
+  token          String   @unique
+  createdBy      User     @relation("InviteCreator", fields: [createdByUserId], references: [id])
+  createdByUserId String
+  maxUses        Int      @default(1)
+  usedCount      Int      @default(0)
+  expiresAt      DateTime?
+  createdAt      DateTime @default(now())
+}
+
+model Cache {
+  id             String   @id @default(cuid())
+  name           String
+  description    String
+  hint           String?
+  latitude       Float
+  longitude      Float
+  isActive       Boolean  @default(true)
+  createdBy      User     @relation(fields: [createdByUserId], references: [id])
+  createdByUserId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  foundBy        FoundCache[]
+}
+
+model FoundCache {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  cache     Cache    @relation(fields: [cacheId], references: [id])
+  cacheId   String
+  foundAt   DateTime @default(now())
+  firstFound Boolean @default(false)
+
+  @@unique([userId, cacheId])
+}
+
+model Setting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum Role {
+  ADMIN
+  PLAYER
+}

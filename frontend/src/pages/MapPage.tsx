@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import axios from 'axios';
 import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
+import api from '../services/api';
 
 const defaultPosition: [number, number] = [52.52, 13.405];
 
@@ -32,7 +32,7 @@ export default function MapPage({ t }: Props) {
   }, []);
 
   const loadCaches = async (coords: Location) => {
-    const response = await axios.post('/api/player/caches/nearby', coords, { withCredentials: true });
+    const response = await api.post('/api/player/caches/nearby', coords);
     setCaches(response.data.caches);
   };
 

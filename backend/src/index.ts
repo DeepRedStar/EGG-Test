@@ -8,7 +8,9 @@ import authRoutes from './routes/authRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import playerRoutes from './routes/playerRoutes.js';
 import { securityHeaders } from './middleware/securityHeaders.js';
+import setupRoutes from './routes/setupRoutes.js';
 import { prisma } from './utils/prisma.js';
+import { enforceSetupComplete } from './middleware/setupGuard.js';
 
 dotenv.config();
 
@@ -44,6 +46,8 @@ app.get('/healthz', async (_req, res) => {
   res.json({ status: 'ok' });
 });
 
+app.use(enforceSetupComplete);
+app.use('/api/setup', setupRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/player', playerRoutes);

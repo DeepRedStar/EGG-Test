@@ -7,7 +7,8 @@ const locationSchema = z.object({ latitude: z.number(), longitude: z.number() })
 
 async function getSetting(key: string, fallback: string) {
   const setting = await prisma.setting.findUnique({ where: { key } });
-  return setting?.value ?? fallback;
+  const envFallback = process.env[key];
+  return setting?.value ?? envFallback ?? fallback;
 }
 
 export async function cachesInRadius(req: Request, res: Response) {

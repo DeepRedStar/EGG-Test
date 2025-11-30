@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 
 type Props = { t: Record<string, string>; onRegister: () => void };
 
@@ -12,11 +12,7 @@ export default function InviteRegister({ t, onRegister }: Props) {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await axios.post(
-        '/api/auth/register',
-        { email, password, token },
-        { withCredentials: true }
-      );
+      await api.post('/api/auth/register', { email, password, token });
       onRegister();
     } catch (err) {
       console.error(err);

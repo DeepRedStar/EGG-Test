@@ -4,8 +4,20 @@
   "logout": "Ausloggen",
   "email": "E-Mail",
   "password": "Passwort",
+  "passwordConfirm": "Passwort wiederholen",
   "register": "Registrieren",
   "invitePlaceholder": "Token aus Einladungslink",
   "found": "Gefunden",
-  "findCache": "Cache finden"
+  "findCache": "Cache finden",
+  "setupTitle": "Erste Einrichtung",
+  "setupIntro": "Erstelle jetzt den ersten Admin-Account und die wichtigsten Basis-Einstellungen.",
+  "setupError": "Setup fehlgeschlagen. Bitte Eingaben prüfen.",
+  "adminEmail": "Admin-E-Mail",
+  "instanceName": "Instanzname",
+  "defaultLocale": "Standardsprache",
+  "enabledLocales": "Aktivierte Sprachen",
+  "impressumUrl": "Impressum-URL",
+  "privacyUrl": "Datenschutzerklärung-URL",
+  "supportEmail": "Support-E-Mail",
+  "completeSetup": "Setup abschließen"
 }

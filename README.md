@@ -2,17 +2,59 @@
 
 A self-hosted geocaching-style web app. Each deployment is a single-tenant instance with invited players only. Built with Node.js/Express/Prisma on the backend and React/Leaflet on the frontend, delivered as a PWA.
 
-## Features
-- Invite-only registration (invite tokens created by admins).
-- Roles: `ADMIN` manages caches, invites, and instance settings; `PLAYER` finds caches on a map and logs discoveries.
-- Privacy-aware location handling (client-side geolocation; only transient coordinates sent for cache checks).
-- PWA with offline fallback for static content.
-- Dockerized stack with PostgreSQL.
-
 ## Requirements
 - Node.js 20+
 - npm
-- Docker & Docker Compose (for containerized setup)
+- Docker & Docker Compose (optional, for containerized setup)
+
+## Step-by-step installation (friendly defaults)
+1. **Clone the repo**
+   ```bash
+   git clone <this-repo-url>
+   cd EGG-Test
+   ```
+2. **Install dependencies**
+   - Install the setup wizard dependencies at the project root:
+     ```bash
+     npm install
+     ```
+   - If you want to run the app without Docker, also install backend/frontend deps:
+     ```bash
+     cd backend && npm install && cd ..
+     cd frontend && npm install && cd ..
+     ```
+3. **Run the CLI setup wizard** (creates `.env` files and can run DB migrations)
+   ```bash
+   npm run setup
+   ```
+   The wizard will ask for:
+   - Database URL (e.g., `postgresql://user:pass@localhost:5432/ostereier`)
+   - Public/Base URL (e.g., `http://localhost:5173`)
+   - Instance name
+   - Default/Enabled locales (e.g., `de` and `de,en`)
+   - Cache visibility/found radii
+   - Impressum URL, Privacy URL, Support email
+   - Optionally run Prisma migrations right away
+4. **Start the stack**
+   - Without Docker:
+     ```bash
+     cd backend && npm run dev
+     # in a second terminal
+     cd frontend && npm run dev
+     ```
+   - With Docker:
+     ```bash
+     cd infra
+     docker compose up --build
+     ```
+5. **First-run web wizard**
+   - Open the frontend (default `http://localhost:5173`).
+   - You will be redirected to `/setup` if no admin exists.
+   - Create the first admin (email + password) and optionally set name/locales/legal links.
+   - After saving, you are logged in as admin and forwarded to the dashboard.
+6. **Next steps**
+   - If you skipped migrations in the wizard: `cd backend && npx prisma migrate deploy`.
+   - Use the admin dashboard to create invite tokens, caches, and update settings.
 
 ## Quickstart (Docker Compose)
 ```bash
@@ -23,10 +65,11 @@ docker compose up --build
 - Frontend: http://localhost:5173
 - PostgreSQL: localhost:5432 (user/password: ostereier)
 
-## Manual development setup
+## Manual development setup (without the wizard)
 1. Copy environment variables:
    ```bash
    cp backend/.env.example backend/.env
+   cp frontend/.env.example frontend/.env
    ```
 2. Install dependencies and run Prisma setup:
    ```bash
@@ -51,6 +94,7 @@ docker compose up --build
 - `POST /api/player/caches/nearby` – caches within configured radius of provided location.
 - `POST /api/player/caches/found` – validate proximity and mark as found.
 - `GET /healthz` – health check for monitoring.
+- `GET /api/setup/status` / `POST /api/setup/initialize` – first-run detection and initial admin creation.
 
 ## Data model (Prisma)
 See `backend/prisma/schema.prisma` for `User`, `InviteToken`, `Cache`, `FoundCache`, `Setting`, and `Role` definitions.
@@ -74,3 +118,4 @@ See `backend/prisma/schema.prisma` for `User`, `InviteToken`, `Cache`, `FoundCac
 - `backend/` – Express API, Prisma schema, Dockerfile.
 - `frontend/` – React + Vite app with Leaflet map and PWA assets.
 - `infra/` – docker-compose.yml wiring backend, frontend, and PostgreSQL.
+- `infra/setup` – interactive CLI wizard for environment files and migrations.

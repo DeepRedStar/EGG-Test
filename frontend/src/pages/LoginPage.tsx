@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 
 type Props = { t: Record<string, string>; onLogin: () => void };
 
@@ -11,11 +11,7 @@ export default function LoginPage({ t, onLogin }: Props) {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await axios.post(
-        '/api/auth/login',
-        { email, password },
-        { withCredentials: true }
-      );
+      await api.post('/api/auth/login', { email, password });
       onLogin();
     } catch (err) {
       console.error(err);

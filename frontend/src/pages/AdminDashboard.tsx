@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 
 type Cache = {
   id: string;
@@ -22,9 +22,9 @@ export default function AdminDashboard() {
   const [settings, setSettings] = useState<Setting[]>([]);
 
   useEffect(() => {
-    axios.get('/api/admin/caches', { withCredentials: true }).then((res) => setCaches(res.data.caches));
-    axios.get('/api/admin/invites', { withCredentials: true }).then((res) => setInvites(res.data.invites));
-    axios.get('/api/admin/settings', { withCredentials: true }).then((res) => setSettings(res.data.settings));
+    api.get('/api/admin/caches').then((res) => setCaches(res.data.caches));
+    api.get('/api/admin/invites').then((res) => setInvites(res.data.invites));
+    api.get('/api/admin/settings').then((res) => setSettings(res.data.settings));
   }, []);
 
   return (

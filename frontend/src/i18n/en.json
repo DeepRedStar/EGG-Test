@@ -8,8 +8,6 @@
   "register": "Register",
   "invitePlaceholder": "Token from invite link",
   "found": "Found",
-  "chooseEvent": "Choose an event",
-  "noEventsAvailable": "No active events available",
   "findCache": "Find cache",
   "setupTitle": "First-time setup",
   "setupIntro": "Create the first admin account and fill in the basics to start your instance.",

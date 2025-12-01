@@ -12,10 +12,7 @@ export default function InviteRegister({ t, onRegister }: Props) {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await api.post('/api/auth/register', { email, password, token });
-      if (response.data.eventId) {
-        localStorage.setItem('selectedEventId', response.data.eventId);
-      }
+      await api.post('/api/auth/register', { email, password, token });
       onRegister();
     } catch (err) {
       console.error(err);

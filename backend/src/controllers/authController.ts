@@ -43,9 +43,8 @@ export async function registerWithInvite(req: Request, res: Response) {
     return res.status(400).json({ message: 'Invalid registration request' });
   }
   const { email, password, token } = parseResult.data;
-  const invite = await prisma.inviteToken.findUnique({ where: { token }, include: { event: true } });
+  const invite = await prisma.inviteToken.findUnique({ where: { token } });
   if (!invite) return res.status(404).json({ message: 'Invite not found' });
-  if (!invite.event.isActive) return res.status(410).json({ message: 'Invite event is inactive' });
   if (invite.expiresAt && invite.expiresAt < new Date()) {
     return res.status(410).json({ message: 'Invite expired' });
   }
@@ -70,7 +69,5 @@ export async function registerWithInvite(req: Request, res: Response) {
 
   req.session.userId = user.id;
   req.session.role = user.role;
-  return res
-    .status(201)
-    .json({ user: { id: user.id, email: user.email, role: user.role }, eventId: invite.eventId });
+  return res.status(201).json({ user: { id: user.id, email: user.email, role: user.role } });
 }

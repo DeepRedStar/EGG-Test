@@ -4,9 +4,6 @@ import {
   createInvite,
   deleteCache,
   deleteInvite,
-  createEvent,
-  listEvents,
-  updateEvent,
   listCaches,
   listInvites,
   listSettings,
@@ -29,9 +26,5 @@ router.delete('/invites/:id', deleteInvite);
 
 router.get('/settings', listSettings);
 router.post('/settings', upsertSetting);
-
-router.get('/events', listEvents);
-router.post('/events', createEvent);
-router.put('/events/:id', updateEvent);
 
 export default router;

@@ -14,7 +14,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const backendEnvPath = path.resolve(__dirname, '../../backend/.env');
 const frontendEnvPath = path.resolve(__dirname, '../../frontend/.env');
-const cleanFullInstall = process.argv.includes('--clean-full-install');
 
 async function readEnvFile(envPath) {
   try {
@@ -44,19 +43,6 @@ async function writeEnv(envPath, values) {
   console.log(chalk.green(`Updated ${envPath}`));
 }
 
-async function runShell(command) {
-  return new Promise((resolve, reject) => {
-    const child = spawn('bash', ['-lc', command], { stdio: 'inherit' });
-    child.on('close', (code) => {
-      if (code === 0) {
-        resolve();
-      } else {
-        reject(new Error(`${command} exited with code ${code}`));
-      }
-    });
-  });
-}
-
 async function runMigrations() {
   console.log(chalk.blue('Running database migrations...'));
   return new Promise((resolve, reject) => {
@@ -75,76 +61,33 @@ async function runMigrations() {
   });
 }
 
-async function runCleanInstall() {
-  console.log(chalk.cyan('\nClean full install requested: updating system and installing dependencies (apt)...'));
-  if (process.platform !== 'linux') {
-    console.log(chalk.yellow('This option is intended for Debian/Ubuntu-like systems with apt. Skipping.'));
-    return;
-  }
-
-  const isRoot = typeof process.getuid === 'function' ? process.getuid() === 0 : false;
-  const sudoPrefix = isRoot ? [] : ['sudo'];
-
-  try {
-    await runShell(`${sudoPrefix.join(' ')} apt update`);
-  } catch (err) {
-    console.error(chalk.red('apt update failed. You can rerun the wizard without --clean-full-install.'));
-    console.error(err instanceof Error ? err.message : err);
-    return;
-  }
-
-  try {
-    const sudo = sudoPrefix.join(' ');
-    await runShell(`${sudo} apt upgrade -y`);
-    await runShell(
-      `${sudo} apt install -y nodejs npm docker.io docker-compose-plugin postgresql postgresql-client postgresql-contrib`
-    );
-    console.log(chalk.green('System packages updated/installed.'));
-  } catch (err) {
-    console.error(chalk.red('Package installation failed. You may need to install dependencies manually.'));
-    console.error(err instanceof Error ? err.message : err);
-  }
-}
-
 async function main() {
   console.log(chalk.cyan('Welcome to the Egg Hunt setup wizard!'));
-
-  if (cleanFullInstall) {
-    const confirm = await inquirer.prompt({
-      type: 'confirm',
-      name: 'proceed',
-      message: 'Run apt update/upgrade and install system dependencies (nodejs, npm, docker, postgres)?',
-      default: false,
-    });
-    if (confirm.proceed) {
-      await runCleanInstall();
-    } else {
-      console.log(chalk.yellow('Skipping clean full install.'));
-    }
-  }
-
   const existingBackend = await readEnvFile(backendEnvPath);
   const existingFrontend = await readEnvFile(frontendEnvPath);
   const defaults = {
-    DATABASE_URL: existingBackend.DATABASE_URL,
+    DATABASE_URL: existingBackend.DATABASE_URL || 'postgresql://user:password@localhost:5432/ostereier',
     BASE_URL: existingBackend.BASE_URL || 'http://localhost:5173',
     PUBLIC_URL: existingBackend.PUBLIC_URL || existingFrontend.VITE_PUBLIC_URL || 'http://localhost:5173',
-    INSTANCE_NAME: existingBackend.INSTANCE_NAME || 'Egg Hunt',
+    INSTANCE_NAME: existingBackend.INSTANCE_NAME || 'My Geo Hunt',
     DEFAULT_LOCALE: existingBackend.DEFAULT_LOCALE || 'de',
     ENABLED_LOCALES: existingBackend.ENABLED_LOCALES || 'de,en',
+    CACHE_VISIBILITY_RADIUS_METERS: existingBackend.CACHE_VISIBILITY_RADIUS_METERS || '2000',
+    CACHE_FOUND_RADIUS_METERS: existingBackend.CACHE_FOUND_RADIUS_METERS || '1',
+    IMPRESSUM_URL: existingBackend.IMPRESSUM_URL || '',
+    PRIVACY_URL: existingBackend.PRIVACY_URL || '',
+    SUPPORT_EMAIL: existingBackend.SUPPORT_EMAIL || 'support@example.com',
     PORT: existingBackend.PORT || '4000',
     VITE_API_URL: existingFrontend.VITE_API_URL || 'http://localhost:4000',
   };
 
-  if (!defaults.DATABASE_URL) {
-    console.log(
-      chalk.yellow(
-        'No DATABASE_URL found in backend/.env. Please edit backend/.env (see backend/.env.example) before running migrations.'
-      )
-    );
-  }
-
   const answers = await inquirer.prompt([
+    {
+      type: 'input',
+      name: 'databaseUrl',
+      message: 'Database connection string',
+      default: defaults.DATABASE_URL,
+    },
     {
       type: 'input',
       name: 'publicUrl',
@@ -170,22 +113,60 @@ async function main() {
       default: defaults.ENABLED_LOCALES,
     },
     {
+      type: 'number',
+      name: 'visibilityRadius',
+      message: 'Cache visibility radius (meters)',
+      default: Number(defaults.CACHE_VISIBILITY_RADIUS_METERS) || 2000,
+    },
+    {
+      type: 'number',
+      name: 'foundRadius',
+      message: 'Cache found radius (meters)',
+      default: Number(defaults.CACHE_FOUND_RADIUS_METERS) || 1,
+    },
+    {
+      type: 'input',
+      name: 'impressumUrl',
+      message: 'Impressum URL (optional)',
+      default: defaults.IMPRESSUM_URL,
+    },
+    {
+      type: 'input',
+      name: 'privacyUrl',
+      message: 'Privacy policy URL (optional)',
+      default: defaults.PRIVACY_URL,
+    },
+    {
+      type: 'input',
+      name: 'supportEmail',
+      message: 'Support/contact email',
+      default: defaults.SUPPORT_EMAIL,
+    },
+    {
       type: 'confirm',
       name: 'runMigration',
       message: 'Run database migrations now?',
-      default: Boolean(defaults.DATABASE_URL),
+      default: true,
     },
   ]);
 
   const sessionSecret = existingBackend.SESSION_SECRET || crypto.randomBytes(24).toString('hex');
 
   const backendEnv = {
-    DATABASE_URL: defaults.DATABASE_URL,
+    DATABASE_URL: answers.databaseUrl,
     SESSION_SECRET: sessionSecret,
     NODE_ENV: 'development',
     BASE_URL: answers.publicUrl,
     PUBLIC_URL: answers.publicUrl,
     PORT: defaults.PORT,
+    CACHE_VISIBILITY_RADIUS_METERS: String(answers.visibilityRadius),
+    CACHE_FOUND_RADIUS_METERS: String(answers.foundRadius),
+    DEFAULT_LOCALE: answers.defaultLocale,
+    ENABLED_LOCALES: answers.enabledLocales,
+    INSTANCE_NAME: answers.instanceName,
+    IMPRESSUM_URL: answers.impressumUrl,
+    PRIVACY_URL: answers.privacyUrl,
+    SUPPORT_EMAIL: answers.supportEmail,
   };
 
   const frontendEnv = {
@@ -198,16 +179,12 @@ async function main() {
   await writeEnv(frontendEnvPath, frontendEnv);
 
   if (answers.runMigration) {
-    if (!defaults.DATABASE_URL) {
-      console.log(chalk.red('Skipping migrations because DATABASE_URL is missing.')); 
-    } else {
-      try {
-        await runMigrations();
-        console.log(chalk.green('Migrations completed.'));
-      } catch (err) {
-        console.error(chalk.red('Migrations failed. Please check your database connection.'));
-        console.error(err instanceof Error ? err.message : err);
-      }
+    try {
+      await runMigrations();
+      console.log(chalk.green('Migrations completed.'));
+    } catch (err) {
+      console.error(chalk.red('Migrations failed. Please check your database connection.'));
+      console.error(err instanceof Error ? err.message : err);
     }
   }
 
@@ -219,7 +196,6 @@ async function main() {
   console.log('  cd frontend && npm run dev');
   console.log('Or use Docker:');
   console.log('  cd infra && docker compose up --build');
-  console.log('Then open the frontend URL and follow /setup to create the first admin.');
 }
 
 main().catch((err) => {

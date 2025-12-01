@@ -47,12 +47,9 @@ export async function initializeSetup(req: Request, res: Response) {
     { key: 'INSTANCE_NAME', value: instanceName },
     { key: 'DEFAULT_LOCALE', value: defaultLocale },
     { key: 'ENABLED_LOCALES', value: enabledLocales },
-    { key: 'CACHE_VISIBILITY_RADIUS_METERS', value: '2000' },
-    { key: 'CACHE_FOUND_RADIUS_METERS', value: '1' },
     { key: 'IMPRESSUM_URL', value: impressumUrl ?? '' },
     { key: 'PRIVACY_URL', value: privacyUrl ?? '' },
     { key: 'SUPPORT_EMAIL', value: supportEmail },
-    { key: 'INFO_TEXT_HOME', value: '' },
   ];
 
   await Promise.all(
@@ -64,19 +61,6 @@ export async function initializeSetup(req: Request, res: Response) {
       })
     )
   );
-  const eventCount = await prisma.event.count();
-  if (eventCount === 0) {
-    const baseSlug = instanceName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'default-event';
-    const slug = baseSlug.length > 0 ? baseSlug : 'default-event';
-    await prisma.event.create({
-      data: {
-        name: instanceName,
-        slug,
-        description: 'Default event created during setup',
-        isActive: true,
-      },
-    });
-  }
   await markSetupComplete();
 
   req.session.userId = admin.id;

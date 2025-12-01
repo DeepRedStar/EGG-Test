@@ -8,57 +8,51 @@ datasource db {
 }
 
 model User {
-  id           String        @id @default(cuid())
-  email        String        @unique
+  id           String   @id @default(cuid())
+  email        String   @unique
   passwordHash String
   role         Role
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
   inviteTokens InviteToken[] @relation("InviteCreator")
   caches       Cache[]
   foundCaches  FoundCache[]
 }
 
 model InviteToken {
-  id              String   @id @default(cuid())
-  token           String   @unique
-  createdBy       User     @relation("InviteCreator", fields: [createdByUserId], references: [id])
+  id             String   @id @default(cuid())
+  token          String   @unique
+  createdBy      User     @relation("InviteCreator", fields: [createdByUserId], references: [id])
   createdByUserId String
-  maxUses         Int      @default(1)
-  usedCount       Int      @default(0)
-  expiresAt       DateTime?
-  createdAt       DateTime @default(now())
-  event           Event    @relation(fields: [eventId], references: [id])
-  eventId         String
+  maxUses        Int      @default(1)
+  usedCount      Int      @default(0)
+  expiresAt      DateTime?
+  createdAt      DateTime @default(now())
 }
 
 model Cache {
-  id              String       @id @default(cuid())
-  name            String
-  description     String
-  hint            String?
-  latitude        Float
-  longitude       Float
-  isActive        Boolean      @default(true)
-  createdBy       User         @relation(fields: [createdByUserId], references: [id])
+  id             String   @id @default(cuid())
+  name           String
+  description    String
+  hint           String?
+  latitude       Float
+  longitude      Float
+  isActive       Boolean  @default(true)
+  createdBy      User     @relation(fields: [createdByUserId], references: [id])
   createdByUserId String
-  event           Event        @relation(fields: [eventId], references: [id])
-  eventId         String
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
-  foundBy         FoundCache[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  foundBy        FoundCache[]
 }
 
 model FoundCache {
-  id         String   @id @default(cuid())
-  user       User     @relation(fields: [userId], references: [id])
-  userId     String
-  cache      Cache    @relation(fields: [cacheId], references: [id])
-  cacheId    String
-  event      Event    @relation(fields: [eventId], references: [id])
-  eventId    String
-  foundAt    DateTime @default(now())
-  firstFound Boolean  @default(false)
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  cache     Cache    @relation(fields: [cacheId], references: [id])
+  cacheId   String
+  foundAt   DateTime @default(now())
+  firstFound Boolean @default(false)
 
   @@unique([userId, cacheId])
 }
@@ -69,21 +63,6 @@ model Setting {
   value     String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-}
-
-model Event {
-  id          String        @id @default(cuid())
-  name        String
-  slug        String        @unique
-  description String?
-  startsAt    DateTime?
-  endsAt      DateTime?
-  isActive    Boolean       @default(true)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  caches      Cache[]
-  invites     InviteToken[]
-  finds       FoundCache[]
 }
 
 enum Role {

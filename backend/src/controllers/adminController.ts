@@ -10,19 +10,16 @@ const cacheSchema = z.object({
   latitude: z.number(),
   longitude: z.number(),
   isActive: z.boolean().optional().default(true),
-  eventId: z.string().min(1),
 });
 
 export async function listCaches(_req: Request, res: Response) {
-  const caches = await prisma.cache.findMany({ include: { foundBy: true, event: true } });
+  const caches = await prisma.cache.findMany({ include: { foundBy: true } });
   res.json({ caches });
 }
 
 export async function createCache(req: Request, res: Response) {
   const parseResult = cacheSchema.safeParse(req.body);
   if (!parseResult.success) return res.status(400).json({ message: 'Invalid cache data' });
-  const event = await prisma.event.findUnique({ where: { id: parseResult.data.eventId } });
-  if (!event) return res.status(404).json({ message: 'Event not found' });
   const cache = await prisma.cache.create({
     data: { ...parseResult.data, createdByUserId: req.session.userId! },
   });
@@ -32,10 +29,6 @@ export async function createCache(req: Request, res: Response) {
 export async function updateCache(req: Request, res: Response) {
   const parseResult = cacheSchema.partial().safeParse(req.body);
   if (!parseResult.success) return res.status(400).json({ message: 'Invalid cache data' });
-  if (parseResult.data.eventId) {
-    const event = await prisma.event.findUnique({ where: { id: parseResult.data.eventId } });
-    if (!event) return res.status(404).json({ message: 'Event not found' });
-  }
   const cache = await prisma.cache.update({ where: { id: req.params.id }, data: parseResult.data });
   res.json({ cache });
 }
@@ -48,14 +41,11 @@ export async function deleteCache(req: Request, res: Response) {
 const inviteSchema = z.object({
   maxUses: z.number().int().positive().optional().default(1),
   expiresAt: z.string().datetime().optional(),
-  eventId: z.string().min(1),
 });
 
 export async function createInvite(req: Request, res: Response) {
   const parseResult = inviteSchema.safeParse(req.body);
   if (!parseResult.success) return res.status(400).json({ message: 'Invalid invite data' });
-  const event = await prisma.event.findUnique({ where: { id: parseResult.data.eventId } });
-  if (!event) return res.status(404).json({ message: 'Event not found' });
   const token = crypto.randomUUID();
   const invite = await prisma.inviteToken.create({
     data: {
@@ -63,14 +53,13 @@ export async function createInvite(req: Request, res: Response) {
       createdByUserId: req.session.userId!,
       maxUses: parseResult.data.maxUses ?? 1,
       expiresAt: parseResult.data.expiresAt ? new Date(parseResult.data.expiresAt) : undefined,
-      eventId: parseResult.data.eventId,
     },
   });
   res.status(201).json({ invite });
 }
 
 export async function listInvites(_req: Request, res: Response) {
-  const invites = await prisma.inviteToken.findMany({ orderBy: { createdAt: 'desc' }, include: { event: true } });
+  const invites = await prisma.inviteToken.findMany({ orderBy: { createdAt: 'desc' } });
   res.json({ invites });
 }
 
@@ -95,52 +84,4 @@ export async function upsertSetting(req: Request, res: Response) {
 export async function listSettings(_req: Request, res: Response) {
   const settings = await prisma.setting.findMany();
   res.json({ settings });
-}
-
-const eventSchema = z.object({
-  name: z.string().min(1),
-  slug: z.string().min(1),
-  description: z.string().optional(),
-  startsAt: z.string().datetime().optional(),
-  endsAt: z.string().datetime().optional(),
-  isActive: z.boolean().optional().default(true),
-});
-
-export async function listEvents(_req: Request, res: Response) {
-  const events = await prisma.event.findMany({ orderBy: { createdAt: 'desc' } });
-  res.json({ events });
-}
-
-export async function createEvent(req: Request, res: Response) {
-  const parseResult = eventSchema.safeParse(req.body);
-  if (!parseResult.success) return res.status(400).json({ message: 'Invalid event data' });
-  const event = await prisma.event.create({
-    data: {
-      name: parseResult.data.name,
-      slug: parseResult.data.slug,
-      description: parseResult.data.description,
-      startsAt: parseResult.data.startsAt ? new Date(parseResult.data.startsAt) : undefined,
-      endsAt: parseResult.data.endsAt ? new Date(parseResult.data.endsAt) : undefined,
-      isActive: parseResult.data.isActive ?? true,
-    },
-  });
-  res.status(201).json({ event });
-}
-
-export async function updateEvent(req: Request, res: Response) {
-  const parseResult = eventSchema.partial().safeParse(req.body);
-  if (!parseResult.success) return res.status(400).json({ message: 'Invalid event data' });
-  const event = await prisma.event.update({
-    where: { id: req.params.id },
-    data: {
-      ...('startsAt' in parseResult.data && parseResult.data.startsAt
-        ? { startsAt: new Date(parseResult.data.startsAt) }
-        : {}),
-      ...('endsAt' in parseResult.data && parseResult.data.endsAt ? { endsAt: new Date(parseResult.data.endsAt) } : {}),
-      ...Object.fromEntries(
-        Object.entries(parseResult.data).filter(([key]) => !['startsAt', 'endsAt'].includes(key))
-      ),
-    },
-  });
-  res.json({ event });
 }

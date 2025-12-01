@@ -27,6 +27,11 @@ A self-hosted geocaching-style web app. Each deployment is a single-tenant insta
    ```bash
    npm run setup
    ```
+   - On a fresh Debian/Ubuntu server, you can optionally let the wizard perform an apt-based install of common prerequisites (Node.js, npm, Docker, PostgreSQL) by passing `-- --clean-full-install`:
+     ```bash
+     npm run setup -- --clean-full-install
+     ```
+     The wizard will ask for confirmation before running `apt update/upgrade` and installing packages.
    The wizard keeps things simple:
    - It reads `DATABASE_URL` from `backend/.env` (copy `backend/.env.example` and edit manually if missing).
    - It asks for the public/base URL, instance name, and preferred locales.

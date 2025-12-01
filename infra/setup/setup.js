@@ -14,6 +14,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const backendEnvPath = path.resolve(__dirname, '../../backend/.env');
 const frontendEnvPath = path.resolve(__dirname, '../../frontend/.env');
+const cleanFullInstall = process.argv.includes('--clean-full-install');
 
 async function readEnvFile(envPath) {
   try {
@@ -43,6 +44,19 @@ async function writeEnv(envPath, values) {
   console.log(chalk.green(`Updated ${envPath}`));
 }
 
+async function runShell(command) {
+  return new Promise((resolve, reject) => {
+    const child = spawn('bash', ['-lc', command], { stdio: 'inherit' });
+    child.on('close', (code) => {
+      if (code === 0) {
+        resolve();
+      } else {
+        reject(new Error(`${command} exited with code ${code}`));
+      }
+    });
+  });
+}
+
 async function runMigrations() {
   console.log(chalk.blue('Running database migrations...'));
   return new Promise((resolve, reject) => {
@@ -61,8 +75,54 @@ async function runMigrations() {
   });
 }
 
+async function runCleanInstall() {
+  console.log(chalk.cyan('\nClean full install requested: updating system and installing dependencies (apt)...'));
+  if (process.platform !== 'linux') {
+    console.log(chalk.yellow('This option is intended for Debian/Ubuntu-like systems with apt. Skipping.'));
+    return;
+  }
+
+  const isRoot = typeof process.getuid === 'function' ? process.getuid() === 0 : false;
+  const sudoPrefix = isRoot ? [] : ['sudo'];
+
+  try {
+    await runShell(`${sudoPrefix.join(' ')} apt update`);
+  } catch (err) {
+    console.error(chalk.red('apt update failed. You can rerun the wizard without --clean-full-install.'));
+    console.error(err instanceof Error ? err.message : err);
+    return;
+  }
+
+  try {
+    const sudo = sudoPrefix.join(' ');
+    await runShell(`${sudo} apt upgrade -y`);
+    await runShell(
+      `${sudo} apt install -y nodejs npm docker.io docker-compose-plugin postgresql postgresql-client postgresql-contrib`
+    );
+    console.log(chalk.green('System packages updated/installed.'));
+  } catch (err) {
+    console.error(chalk.red('Package installation failed. You may need to install dependencies manually.'));
+    console.error(err instanceof Error ? err.message : err);
+  }
+}
+
 async function main() {
   console.log(chalk.cyan('Welcome to the Egg Hunt setup wizard!'));
+
+  if (cleanFullInstall) {
+    const confirm = await inquirer.prompt({
+      type: 'confirm',
+      name: 'proceed',
+      message: 'Run apt update/upgrade and install system dependencies (nodejs, npm, docker, postgres)?',
+      default: false,
+    });
+    if (confirm.proceed) {
+      await runCleanInstall();
+    } else {
+      console.log(chalk.yellow('Skipping clean full install.'));
+    }
+  }
+
   const existingBackend = await readEnvFile(backendEnvPath);
   const existingFrontend = await readEnvFile(frontendEnvPath);
   const defaults = {
